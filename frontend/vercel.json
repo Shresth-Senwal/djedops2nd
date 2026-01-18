@@ -4,7 +4,6 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "outputDirectory": ".next",
   "env": {
     "NEXT_PUBLIC_BACKEND_URL": "https://djedops-backend.onrender.com",
     "NEXT_PUBLIC_WEIL_SENTINEL_ENDPOINT": "https://sentinel.unweil.me",

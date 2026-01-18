@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',      // <--- REQUIRED for blockchain hosting
+  // Removed 'output: export' to enable API routes on Vercel
+  // API routes require server-side rendering (default mode)
   images: {
-    unoptimized: true,   // <--- REQUIRED (No Node.js image server)
+    unoptimized: true,   // Keep for compatibility
   },
   eslint: {
     ignoreDuringBuilds: true,  // Skip ESLint checks during build
