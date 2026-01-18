@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "outputDirectory": ".next",
+  "env": {
+    "NEXT_PUBLIC_BACKEND_URL": "https://djedops-backend.onrender.com",
+    "NEXT_PUBLIC_WEIL_SENTINEL_ENDPOINT": "https://sentinel.unweil.me",
+    "NEXT_PUBLIC_WEIL_BLOCK_EXPLORER": "https://www.unweil.me",
+    "NEXT_PUBLIC_DJED_COORDINATOR_ADDRESS": "weil1coordinator00000000000000000000000",
+    "NEXT_PUBLIC_TELEPORT_GATEWAY_ADDRESS": "weil1teleport000000000000000000000000"
+  },
+  "regions": ["iad1"],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ]
+    }
+  ]
+}

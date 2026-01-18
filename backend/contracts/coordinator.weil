@@ -1,0 +1,107 @@
+/**
+ * WeilChain Workflow Coordinator Contract
+ * 
+ * This contract manages the deployment and execution of multi-node workflows
+ * on the WeilChain network. It acts as the coordinator for all workflow operations.
+ */
+
+contract WorkflowCoordinator {
+    // Contract owner
+    address public owner;
+    
+    // Workflow registry
+    mapping(string => Workflow) public workflows;
+    
+    // Workflow execution logs
+    mapping(string => ExecutionLog[]) public executionLogs;
+    
+    struct Workflow {
+        string workflow_id;
+        string name;
+        address owner;
+        bytes workflow_data;
+        uint256 created_at;
+        bool is_active;
+    }
+    
+    struct ExecutionLog {
+        string workflow_id;
+        uint256 timestamp;
+        string status;
+        bytes result;
+    }
+    
+    // Events
+    event WorkflowDeployed(string workflow_id, address owner, uint256 timestamp);
+    event WorkflowExecuted(string workflow_id, string status, uint256 timestamp);
+    
+    constructor() {
+        owner = msg.sender;
+    }
+    
+    /**
+     * Deploy a new workflow
+     */
+    function deploy_workflow(
+        string memory workflow_id,
+        string memory name,
+        bytes memory workflow_data
+    ) public returns (bool) {
+        require(bytes(workflows[workflow_id].workflow_id).length == 0, "Workflow already exists");
+        
+        workflows[workflow_id] = Workflow({
+            workflow_id: workflow_id,
+            name: name,
+            owner: msg.sender,
+            workflow_data: workflow_data,
+            created_at: block.timestamp,
+            is_active: true
+        });
+        
+        emit WorkflowDeployed(workflow_id, msg.sender, block.timestamp);
+        return true;
+    }
+    
+    /**
+     * Execute a deployed workflow
+     */
+    function execute_workflow(
+        string memory workflow_id,
+        bytes memory execution_params
+    ) public returns (bool) {
+        require(bytes(workflows[workflow_id].workflow_id).length > 0, "Workflow not found");
+        require(workflows[workflow_id].is_active, "Workflow is inactive");
+        
+        // Log the execution
+        executionLogs[workflow_id].push(ExecutionLog({
+            workflow_id: workflow_id,
+            timestamp: block.timestamp,
+            status: "completed",
+            result: execution_params
+        }));
+        
+        emit WorkflowExecuted(workflow_id, "completed", block.timestamp);
+        return true;
+    }
+    
+    /**
+     * Get workflow details
+     */
+    function get_workflow(string memory workflow_id) public view returns (
+        string memory name,
+        address workflow_owner,
+        uint256 created_at,
+        bool is_active
+    ) {
+        Workflow memory wf = workflows[workflow_id];
+        return (wf.name, wf.owner, wf.created_at, wf.is_active);
+    }
+    
+    /**
+     * Deactivate a workflow
+     */
+    function deactivate_workflow(string memory workflow_id) public {
+        require(workflows[workflow_id].owner == msg.sender, "Not workflow owner");
+        workflows[workflow_id].is_active = false;
+    }
+}

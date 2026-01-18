@@ -1,0 +1,315 @@
+/**
+ * WeilChain Applet Registry Contract Interface (WIDL)
+ * 
+ * Production-ready interface definition for the AppletRegistry WASM contract.
+ * This contract enables decentralized discovery, monetization, and access control
+ * for applets deployed on the WeilChain Applet Protocol.
+ * 
+ * Compile with WeilChain WIDL compiler from: https://github.com/weilliptic-public/wadk.git
+ * 
+ * Interface Description Language (WIDL) Format:
+ * - Defines contract methods, parameters, and return types
+ * - Used for code generation and type-safe client libraries
+ * - Equivalent to Solidity ABI or Rust trait definitions
+ */
+
+// =============================================================================
+// Data Structures
+// =============================================================================
+
+/**
+ * Applet metadata stored on-chain
+ * 
+ * All fields are immutable except rating and total_installs which are updated
+ * through dedicated methods.
+ */
+struct AppletMetadata {
+  id: String,                    // Unique applet identifier (hash of name + author)
+  name: String,                  // Display name (e.g., "DjedOPS")
+  description: String,           // Detailed description (max 500 chars)
+  icon_uri: String,              // IPFS/Arweave URI for icon image
+  category: String,              // Category tag (DeFi, Gaming, Social, etc.)
+  author_address: String,        // WeilChain address of applet creator (hex)
+  logic_contract: String,        // Address of applet's main WASM contract (hex)
+  access_fee: u64,               // Fee in Wei to access applet (0 = free)
+  total_installs: u64,           // Counter for analytics
+  rating: u32,                   // Average rating (1-5 stars, scaled by 100)
+  created_at: u64,               // Unix timestamp of registration
+  is_active: bool                // Can be deactivated by author
+}
+
+/**
+ * Access control record
+ * 
+ * Tracks which users have purchased access to which applets.
+ * Used for gating features in premium applets.
+ */
+struct AppletAccess {
+  user_address: String,          // User who purchased access
+  applet_id: String,             // Applet they have access to
+  purchased_at: u64,             // Unix timestamp of purchase
+  expires_at: u64                // Expiration (0 = permanent)
+}
+
+/**
+ * Registry statistics
+ * 
+ * Global counters for analytics dashboard.
+ */
+struct RegistryStats {
+  total_applets: u64,            // Total registered applets
+  total_installs: u64,           // Sum of all install counts
+  total_revenue: u64,            // Sum of all access fees collected
+  active_applets: u64            // Applets with is_active = true
+}
+
+// =============================================================================
+// Registry Management Methods
+// =============================================================================
+
+/**
+ * Register a new applet in the registry
+ * 
+ * Creates a new applet entry and makes it discoverable in the marketplace.
+ * Only the author can modify the applet after registration.
+ * 
+ * @param name - Display name (must be unique per author)
+ * @param description - Detailed description (supports markdown)
+ * @param icon_uri - URI to icon image (IPFS: ipfs://..., Arweave: ar://...)
+ * @param category - Category tag (suggest: DeFi, Gaming, Social, Utility, Tools)
+ * @param logic_contract - Address of applet's main contract (hex, no 0x)
+ * @param access_fee - Fee in Wei (use 0 for free applets)
+ * @returns applet_id - Unique identifier for the registered applet
+ * 
+ * @throws AppletAlreadyExists if (name + author) combination exists
+ * @throws InvalidParameters if required fields are empty
+ */
+fn register_applet(
+  name: String,
+  description: String,
+  icon_uri: String,
+  category: String,
+  logic_contract: String,
+  access_fee: u64
+) -> String
+
+/**
+ * Update applet metadata (author only)
+ * 
+ * Allows author to update description, icon, or access fee.
+ * Cannot change name, category, or creation timestamp.
+ * 
+ * @param applet_id - ID of applet to update
+ * @param description - New description (or empty to keep existing)
+ * @param icon_uri - New icon URI (or empty to keep existing)
+ * @param access_fee - New access fee (or current value to keep existing)
+ * @returns success - Whether update succeeded
+ * 
+ * @throws Unauthorized if caller is not the applet author
+ * @throws AppletNotFound if applet_id doesn't exist
+ */
+fn update_applet(
+  applet_id: String,
+  description: String,
+  icon_uri: String,
+  access_fee: u64
+) -> bool
+
+/**
+ * Deactivate an applet (author only)
+ * 
+ * Sets is_active to false, hiding applet from marketplace.
+ * Does not delete data or revoke existing access.
+ * 
+ * @param applet_id - ID of applet to deactivate
+ * @returns success - Whether deactivation succeeded
+ * 
+ * @throws Unauthorized if caller is not the applet author
+ */
+fn deactivate_applet(applet_id: String) -> bool
+
+/**
+ * Reactivate a deactivated applet (author only)
+ * 
+ * @param applet_id - ID of applet to reactivate
+ * @returns success - Whether reactivation succeeded
+ */
+fn reactivate_applet(applet_id: String) -> bool
+
+// =============================================================================
+// Monetization & Access Control
+// =============================================================================
+
+/**
+ * Purchase access to an applet
+ * 
+ * Transfers access_fee from caller to applet author and grants access.
+ * For free applets (access_fee = 0), simply records the access grant.
+ * 
+ * @param applet_id - ID of applet to purchase
+ * @returns success - Whether purchase succeeded
+ * 
+ * @throws InsufficientFunds if caller doesn't have enough balance
+ * @throws AppletNotActive if applet is deactivated
+ * @throws AlreadyPurchased if user already has access
+ */
+fn monetize_applet(applet_id: String) -> bool
+
+/**
+ * Check if user has access to an applet
+ * 
+ * Used for frontend gating and access control validation.
+ * 
+ * @param applet_id - ID of applet to check
+ * @param user_address - Address to check access for
+ * @returns has_access - Whether user can access applet
+ */
+fn check_access(applet_id: String, user_address: String) -> bool
+
+/**
+ * Revoke access (author only, emergency use)
+ * 
+ * @param applet_id - ID of applet
+ * @param user_address - User to revoke access from
+ * @returns success - Whether revocation succeeded
+ */
+fn revoke_access(applet_id: String, user_address: String) -> bool
+
+// =============================================================================
+// Discovery & Query Methods
+// =============================================================================
+
+/**
+ * Get metadata for a specific applet
+ * 
+ * @param applet_id - ID of applet to query
+ * @returns metadata - Full applet metadata struct
+ * 
+ * @throws AppletNotFound if applet_id doesn't exist
+ */
+fn get_applet(applet_id: String) -> AppletMetadata
+
+/**
+ * List all registered applets with pagination
+ * 
+ * Returns applets sorted by created_at (newest first).
+ * 
+ * @param offset - Starting index (0-based)
+ * @param limit - Number of results to return (max 100)
+ * @returns applets - Array of applet metadata
+ */
+fn list_applets(offset: u32, limit: u32) -> Vec<AppletMetadata>
+
+/**
+ * List applets by category
+ * 
+ * @param category - Category to filter by
+ * @param offset - Starting index
+ * @param limit - Number of results (max 100)
+ * @returns applets - Filtered array of applet metadata
+ */
+fn list_applets_by_category(
+  category: String,
+  offset: u32,
+  limit: u32
+) -> Vec<AppletMetadata>
+
+/**
+ * List applets by author
+ * 
+ * @param author_address - Author's WeilChain address
+ * @param offset - Starting index
+ * @param limit - Number of results (max 100)
+ * @returns applets - Array of author's applets
+ */
+fn list_applets_by_author(
+  author_address: String,
+  offset: u32,
+  limit: u32
+) -> Vec<AppletMetadata>
+
+/**
+ * Search applets by name or description
+ * 
+ * Simple text search (case-insensitive substring match).
+ * 
+ * @param query - Search query string
+ * @param limit - Number of results (max 50)
+ * @returns applets - Array of matching applets
+ */
+fn search_applets(query: String, limit: u32) -> Vec<AppletMetadata>
+
+// =============================================================================
+// Analytics & Engagement Methods
+// =============================================================================
+
+/**
+ * Increment install counter when user launches applet
+ * 
+ * Called by frontend when "Launch" button is clicked.
+ * No access control - anyone can increment (analytics only).
+ * 
+ * @param applet_id - ID of applet being installed/launched
+ * @returns success - Whether increment succeeded
+ */
+fn increment_installs(applet_id: String) -> bool
+
+/**
+ * Submit or update rating for an applet
+ * 
+ * Requires access to applet. Updates average rating.
+ * Each user can only rate once (updates existing rating).
+ * 
+ * @param applet_id - ID of applet to rate
+ * @param rating - Rating from 1-5 (stored as 100-500 for decimals)
+ * @returns success - Whether rating was recorded
+ * 
+ * @throws Unauthorized if user doesn't have access
+ * @throws InvalidRating if rating is not between 1-5
+ */
+fn update_rating(applet_id: String, rating: u32) -> bool
+
+/**
+ * Get global registry statistics
+ * 
+ * @returns stats - Registry statistics struct
+ */
+fn get_registry_stats() -> RegistryStats
+
+// =============================================================================
+// Administrative Methods
+// =============================================================================
+
+/**
+ * Update registry configuration (admin only)
+ * 
+ * Allows protocol admin to update global settings.
+ * 
+ * @param min_access_fee - Minimum allowed access fee (spam prevention)
+ * @param max_description_length - Maximum description length
+ * @returns success - Whether update succeeded
+ * 
+ * @throws Unauthorized if caller is not admin
+ */
+fn update_config(
+  min_access_fee: u64,
+  max_description_length: u32
+) -> bool
+
+/**
+ * Emergency pause (admin only)
+ * 
+ * Pauses all registrations and purchases for emergency maintenance.
+ * Does not affect existing access or queries.
+ * 
+ * @returns success - Whether pause succeeded
+ */
+fn pause_registry() -> bool
+
+/**
+ * Resume after emergency pause (admin only)
+ * 
+ * @returns success - Whether resume succeeded
+ */
+fn resume_registry() -> bool
+
